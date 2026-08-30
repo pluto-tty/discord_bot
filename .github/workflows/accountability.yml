@@ -1,0 +1,62 @@
+name: Accountability Bot
+
+on:
+  # Allows you to run the workflow manually from GitHub Actions.
+  workflow_dispatch:
+
+  # GitHub Actions cron uses UTC.
+  # Change these times to your preferred schedule.
+  #
+  # Example:
+  # 07:00 UTC = 7:00 AM UTC
+  # 14:00 UTC = 2:00 PM UTC
+  #
+  # If you want local-time scheduling, convert your desired
+  # local time to UTC before changing these values.
+  schedule:
+    - cron: "0 7 * * *"    # Morning
+    - cron: "0 12 * * *"   # Midday
+    - cron: "0 20 * * *"   # Evening
+
+
+jobs:
+  send-message:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send message
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          BOT_TIMEZONE: ${{ secrets.BOT_TIMEZONE }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          case "$SCHEDULE" in
+            "0 7 * * *")
+              python bot.py morning
+              ;;
+
+            "0 12 * * *")
+              python bot.py midday
+              ;;
+
+            "0 20 * * *")
+              python bot.py evening
+              ;;
+
+            *)
+              echo "Manual run or unknown schedule."
+              echo "Use workflow_dispatch to test manually."
+              ;;
+          esac
